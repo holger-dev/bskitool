@@ -1,0 +1,25 @@
+# Zugangsdaten und Token – niemals einchecken
+daten/*
+!daten/.gitkeep
+.env
+*.pem
+token.json
+einstellungen.json
+
+# Gerenderte Seiten, Pakete, Protokolle
+ausgabe/*
+!ausgabe/.gitkeep
+*.imscc
+
+# Eigene Kurse (nur das Beispiel gehört ins Repo)
+kurse/*
+!kurse/beispiel/
+!kurse/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+
+# Betriebssystem
+.DS_Store
+Thumbs.db

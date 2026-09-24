@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>bskitool</title>
+<style>
+:root{--ink:#15202b;--muted:#5b6b7c;--line:#dde4ec;--blue:#1f5fa9;--blue-bg:#eaf2fb;--green:#1c7a4a;
+  --green-bg:#e8f6ee;--red:#b3261e;--red-bg:#fdecec;--amber:#a86300;--amber-bg:#fdf3e2;--grey:#f4f6f9}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:#fff;font-size:15px;line-height:1.5}
+header{display:flex;align-items:center;gap:18px;padding:12px 22px;border-bottom:3px solid var(--ink)}
+header h1{font-size:20px;margin:0}
+header .st{margin-left:auto;font-size:13px;color:var(--muted)}
+header .st b{color:var(--ink)}
+.pill{display:inline-block;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700;background:var(--grey)}
+.pill.ok{background:var(--green-bg);color:var(--green)}
+.pill.no{background:var(--red-bg);color:var(--red)}
+nav{display:flex;gap:4px;padding:10px 22px 0;border-bottom:1px solid var(--line)}
+nav button{border:1px solid var(--line);border-bottom:0;background:var(--grey);padding:9px 16px;border-radius:8px 8px 0 0;cursor:pointer;font:inherit;font-weight:600;color:var(--muted)}
+nav button.akt{background:#fff;color:var(--ink);position:relative;top:1px}
+main{padding:20px 22px 60px;max-width:1100px}
+section{display:none}section.akt{display:block}
+h2{font-size:18px;margin:0 0 12px}
+h3{font-size:15px;margin:18px 0 8px}
+.zeile{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0}
+label.f{display:block;margin:8px 0;font-size:13px;color:var(--muted)}
+label.f input,label.f select{display:block;width:100%;max-width:560px;font:inherit;font-size:15px;padding:7px 10px;border:1px solid #c9d1da;border-radius:8px;margin-top:2px;color:var(--ink)}
+button.b{border:1px solid var(--blue);background:var(--blue);color:#fff;border-radius:8px;padding:8px 16px;font:inherit;font-weight:700;cursor:pointer}
+button.b.sek{background:#fff;color:var(--blue)}
+button.b.rot{background:var(--red);border-color:var(--red)}
+button.b.gruen{background:var(--green);border-color:var(--green)}
+button.b:disabled{opacity:.45;cursor:default}
+.box{border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:14px 0}
+.hint{background:var(--amber-bg);border-left:5px solid var(--amber);border-radius:0 8px 8px 0;padding:10px 14px;margin:12px 0;font-size:14px}
+.err{background:var(--red-bg);border-left:5px solid var(--red);border-radius:0 8px 8px 0;padding:10px 14px;margin:12px 0}
+.okb{background:var(--green-bg);border-left:5px solid var(--green);border-radius:0 8px 8px 0;padding:10px 14px;margin:12px 0}
+pre.log{background:var(--grey);border:1px solid var(--line);border-radius:8px;padding:12px 14px;max-height:380px;overflow:auto;font-size:13px;line-height:1.45;white-space:pre-wrap;margin:10px 0}
+pre.log .ok{color:var(--green)}pre.log .fehler{color:var(--red);font-weight:700}pre.log .hinweis{color:var(--amber)}pre.log .trocken{color:var(--muted)}
+table{border-collapse:collapse;width:100%;margin:10px 0;font-size:14px}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{background:var(--grey);font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+tr.tiefe1 td:nth-child(3){padding-left:28px}tr.tiefe2 td:nth-child(3){padding-left:48px}
+tr.weg{opacity:.45;text-decoration:line-through}
+.kl{font-size:12px;color:var(--muted)}
+code{background:var(--grey);padding:.1em .35em;border-radius:4px;font-size:.93em}
+.ue li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:20px;padding:2px 8px;background:var(--grey);color:var(--muted);margin-right:6px}
+.tag.seite{background:var(--blue-bg);color:var(--blue)}.tag.abgabe{background:var(--amber-bg);color:var(--amber)}
+.tag.quiz{background:var(--green-bg);color:var(--green)}.tag.note{background:#f1ebfa;color:#6b3fa0}
+.tag.datei,.tag.link{background:var(--grey)}
+dialog{border:1px solid var(--line);border-radius:12px;padding:22px 26px;max-width:560px;font:inherit}
+dialog::backdrop{background:rgba(0,0,0,.35)}
+</style>
+</head>
+<body>
+<header>
+  <h1>bskitool</h1>
+  <span class="kl">Kurse aus Markdown bauen und nach Brightspace einspielen</span>
+  <span class="st" id="kopfstatus">…</span>
+</header>
+<nav>
+  <button data-t="bauen" class="akt">Kurs bauen</button>
+  <button data-t="aufraeumen">Aufräumen</button>
+  <button data-t="einst">Einstellungen &amp; Anmeldung</button>
+  <button data-t="hilfe">Hilfe</button>
+</nav>
+<main>
+
+<!-- ============================ BAUEN ============================ -->
+<section id="t-bauen" class="akt">
+  <div class="zeile">
+    <label class="f" style="flex:1 1 360px;margin:0">Kursdatei (aus dem Ordner <code>kurse/</code>)
+      <select id="kursdatei"></select></label>
+    <button class="b sek" onclick="kursdateienLaden()">Neu einlesen</button>
+  </div>
+  <div id="kursinfo"></div>
+
+  <div class="box">
+    <div class="zeile">
+      <label class="f" style="margin:0">Design
+        <select id="design"><option value="">wie in der Datei (Standard: D2L-Vorlage)</option>
+          <option value="d2l">D2L-Vorlage (HTML Template Library V3)</option>
+          <option value="dv">DV-Design (eigenständig)</option></select></label>
+      <button class="b sek" onclick="vorschau()">Vorschau im Browser</button>
+      <button class="b sek" onclick="exportieren()">Als .imscc exportieren (Rückfallweg)</button>
+    </div>
+  </div>
+
+  <div class="box">
+    <h3 style="margin-top:0">Nach Brightspace einspielen</h3>
+    <div class="zeile">
+      <label class="f" style="flex:1 1 360px;margin:0">Ziel-Kurs in Brightspace
+        <select id="zielkurs"><option value="">– erst anmelden –</option></select></label>
+      <button class="b sek" onclick="zielkurseLaden()">Kurse laden</button>
+    </div>
+    <div class="zeile">
+      <button class="b sek" onclick="einspielen(true)">Trockenlauf (ändert nichts)</button>
+      <button class="b gruen" onclick="einspielen(false)">Jetzt einspielen</button>
+      <button class="b rot" onclick="rueckgaengigZeigen()">Letztes Einspielen rückgängig</button>
+    </div>
+    <div class="kl">Alles wird <b>verborgen</b> angelegt. Du gibst in Brightspace selbst frei.</div>
+  </div>
+
+  <div id="laufbox" style="display:none">
+    <h3 id="lauftitel">Protokoll</h3>
+    <pre class="log" id="lauflog"></pre>
+    <div id="laufergebnis"></div>
+  </div>
+</section>
+
+<!-- ============================ AUFRAEUMEN ============================ -->
+<section id="t-aufraeumen">
+  <div class="hint"><b>Vorsicht:</b> Gelöschte <b>Inhaltsmodule und -themen</b> kannst du nicht selbst wiederherstellen
+    (nur per Ticket bei D2L). Abgaben, Quizze und Notenelemente landen ca. 30 Tage im Papierkorb.</div>
+  <div class="zeile">
+    <label class="f" style="flex:1 1 360px;margin:0">Kurs
+      <select id="aufkurs"><option value="">– erst anmelden –</option></select></label>
+    <button class="b sek" onclick="zielkurseLaden()">Kurse laden</button>
+    <button class="b" onclick="inhaltLaden()">Inhalt anzeigen</button>
+  </div>
+  <div id="inhalt"></div>
+  <div class="zeile" id="loeschzeile" style="display:none">
+    <span id="auswahlzahl" class="kl">0 ausgewählt</span>
+    <button class="b rot" onclick="loeschenFragen()">Ausgewählte löschen …</button>
+  </div>
+  <div id="loeschlog"></div>
+</section>
+
+<!-- ============================ EINSTELLUNGEN ============================ -->
+<section id="t-einst">
+  <div class="box">
+    <h3 style="margin-top:0">Anmeldung</h3>
+    <div id="anmeldestatus"></div>
+    <div class="zeile">
+      <button class="b" onclick="anmelden()">Bei Brightspace anmelden</button>
+      <button class="b sek" onclick="pruefen()">Erreichbarkeit prüfen</button>
+      <button class="b sek" onclick="abmelden()">Abmelden</button>
+    </div>
+    <div id="anmeldehinweis"></div>
+  </div>
+  <div class="box">
+    <h3 style="margin-top:0">Zugangsdaten (OAuth-2.0-Anwendung)</h3>
+    <p class="kl">Die Anwendung wird einmalig in Brightspace registriert: <i>Admin-Tools → Manage Extensibility → OAuth 2.0 → Register an app</i>.
+      Redirect-URI und Scopes müssen dort <b>genau</b> so stehen wie hier.</p>
+    <label class="f">Brightspace-Adresse (ohne https://) <input id="e-host" placeholder="meineschule.brightspace.com"></label>
+    <label class="f">Client-ID <input id="e-client_id" autocomplete="off"></label>
+    <label class="f">Client-Secret <input id="e-client_secret" type="password" autocomplete="off" placeholder="(bleibt leer, wenn schon gespeichert)"></label>
+    <label class="f">Redirect-URI <input id="e-redirect"></label>
+    <label class="f">Scopes <input id="e-scopes"></label>
+    <p class="kl">Empfohlen: <code>core:*:* content:*:* grades:*:* dropbox:*:*</code> – zusätzlich <code>quizzing:*:*</code>, wenn bskitool auch Quiz-Hüllen anlegen soll.
+      Was hier steht, muss in Brightspace registriert sein, sonst lehnt die Anmeldung ab.</p>
+    <label class="f"><input type="checkbox" id="e-pkce" style="width:auto;display:inline"> PKCE verwenden (nur wenn in Brightspace so eingestellt)</label>
+    <div class="zeile"><button class="b" onclick="einstSpeichern()">Speichern</button><span id="einstinfo" class="kl"></span></div>
+  </div>
+</section>
+
+<!-- ============================ HILFE ============================ -->
+<section id="t-hilfe">
+  <h2>So funktioniert bskitool</h2>
+  <ol class="ue">
+    <li>Kurs als Markdown-Datei in <code>kurse/&lt;name&gt;/kurs.md</code> schreiben (Bilder und Dateien daneben). Vorlage: <code>kurse/beispiel/</code>, Referenz: <code>docs/FORMAT.md</code>, ausführliche Anleitung: <code>docs/ANLEITUNG.md</code>.</li>
+    <li>Reiter <b>Kurs bauen</b>: Datei wählen → <b>Vorschau</b> ansehen.</li>
+    <li>Reiter <b>Einstellungen</b>: einmal Zugangsdaten eintragen und <b>anmelden</b>.</li>
+    <li><b>Trockenlauf</b>, dann <b>Jetzt einspielen</b>. Danach in Brightspace freigeben.</li>
+  </ol>
+  <h3>Aufbau der kurs.md</h3>
+<pre class="log" style="max-height:none">titel: Datenverarbeitung Klasse 11
+kurs: 12345            (orgUnitId, optional – sonst hier wählen)
+design: d2l            (oder dv)
+
+# Lektion 1 – Summe und Co        ← ein Modul
+beschreibung: Erste Schritte
+
+## Seite: Einstieg                 ← eine HTML-Seite, Markdown folgt
+kurz: Untertitel der Seite
+
+Text mit **fett**, *kursiv*, `Code`, Listen, Tabellen, Bildern ![](bild.png)
+
+::: merke Überschrift des Kastens
+Text im Kasten. Arten: merke, ziel, input, auftrag, geschafft, achtung, extra, info, beispiel
+:::
+
+::: lösung
+wird eingeklappt (auch: hinweis, tipp)
+:::
+
+### Quiz: Selbstcheck              ← Quiz IN der Seite (JavaScript, ohne Bewertung)
+Womit beginnt jede Formel? (2 P)
+- [x] mit =
+- [ ] mit +
+> Richtig: Genau!
+> Falsch: Schau oben nach.
+
+Excel kann rechnen.               ← Wahr/Falsch
+- [x] Wahr
+- [ ] Falsch
+
+Wie heißt die Funktion für den Mittelwert?   ← Kurzantwort
+= MITTELWERT
+
+## Datei: material/Uebung.xlsx    ← Datei als Thema hochladen
+titel: Übungsmappe
+
+## Link: Excel-Hilfe
+url: https://support.microsoft.com
+
+## Abgabe: Rechnung abgeben       ← Abgabeordner + Notenelement
+punkte: 20
+faellig: 15.10.2026
+Anweisung als Markdown …
+
+## Note: Mitarbeit                ← nur ein Notenelement
+punkte: 10
+
+## Quiz: Abschlussquiz            ← eigenständiges Quiz
+benotet: ja                       (legt Notenelement + Quiz-Hülle an; Fragen kommen als CSV)
+Fragen wie oben …</pre>
+  <h3>Was die API nicht kann</h3>
+  <ul class="ue">
+    <li><b>Quizfragen</b> lassen sich nicht per API anlegen. bskitool legt die Quiz-Hülle an und schreibt die Fragen als
+      D2L-CSV nach <code>ausgabe/&lt;kurs&gt;/fragen/</code> – die importierst du in die Fragensammlung. Selbstchecks in
+      Seiten funktionieren dagegen sofort.</li>
+    <li>Wenn die API gar nicht mitspielt: <b>Als .imscc exportieren</b> und in Brightspace importieren.</li>
+    <li>Nach jedem Einspielen liegt in <code>ausgabe/&lt;kurs&gt;/noch-zu-tun.html</code>, was von Hand bleibt.</li>
+  </ul>
+</section>
+</main>
+
+<dialog id="dlg">
+  <h3 id="dlg-titel" style="margin-top:0"></h3>
+  <div id="dlg-text"></div>
+  <label class="f" id="dlg-eingabe-l" style="display:none">Zur Bestätigung <b>LOESCHEN</b> eintippen
+    <input id="dlg-eingabe" autocomplete="off"></label>
+  <div class="zeile" style="justify-content:flex-end;margin-top:14px">
+    <button class="b sek" onclick="dlgSchliessen(false)">Abbrechen</button>
+    <button class="b rot" id="dlg-ok" onclick="dlgSchliessen(true)">Ja, weiter</button>
+  </div>
+</dialog>
+
+<script>
+// ---------- Grundlagen ----------
+const $ = s => document.querySelector(s);
+async function api(pfad, daten){
+  const r = daten ? await fetch(pfad,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(daten)})
+                  : await fetch(pfad);
+  const j = await r.json();
+  if(typeof j.fehler==="string") throw new Error(j.fehler);
+  return j;
+}
+function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function melde(el, html, art){ $(el).innerHTML = html ? `<div class="${art||'okb'}">${html}</div>` : ""; }
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("nav button").forEach(x=>x.classList.remove("akt"));
+  document.querySelectorAll("section").forEach(x=>x.classList.remove("akt"));
+  b.classList.add("akt"); $("#t-"+b.dataset.t).classList.add("akt");
+});
+let dlgResolve=null;
+function frage(titel, text, tippen){
+  $("#dlg-titel").textContent=titel; $("#dlg-text").innerHTML=text;
+  $("#dlg-eingabe-l").style.display = tippen?"block":"none"; $("#dlg-eingabe").value="";
+  $("#dlg").showModal();
+  return new Promise(res=>dlgResolve=res);
+}
+function dlgSchliessen(ok){
+  const t=$("#dlg-eingabe").value.trim();
+  $("#dlg").close(); const r=dlgResolve; dlgResolve=null;
+  r(ok ? ($("#dlg-eingabe-l").style.display==="block" ? t : true) : false);
+}
+
+// ---------- Status ----------
+let STATUS={};
+async function status(){
+  try{
+    STATUS = await api("/api/status");
+    const a = STATUS.angemeldet;
+    $("#kopfstatus").innerHTML = (STATUS.demo?'<span class="pill">DEMO-MODUS – nichts wird gesendet</span> &nbsp; ':'') + `<b>${esc(STATUS.host)}</b> &nbsp; <span class="pill ${a?'ok':'no'}">${a?'angemeldet':'nicht angemeldet'}</span>`;
+    $("#anmeldestatus").innerHTML = STATUS.konfiguriert
+      ? (a ? `<div class="okb">Angemeldet bei <b>${esc(STATUS.host)}</b>. <span id="werbin"></span></div>`
+           : `<div class="hint">Zugangsdaten sind gespeichert, aber du bist noch nicht angemeldet.</div>`)
+      : `<div class="err">Noch keine Zugangsdaten. Trag unten Adresse, Client-ID und Client-Secret ein und speichere. Wie du die bekommst, steht in <code>docs/OAUTH-EINRICHTEN.md</code>.</div>`;
+    if(a) api("/api/wer").then(w=>{const e=$("#werbin"); if(e) e.textContent=`(${w.name}, ${w.benutzer})`;}).catch(()=>{});
+    const e = STATUS.einstellungen;
+    for(const k of ["host","client_id","redirect","scopes"]) if(document.activeElement.id!=="e-"+k) $("#e-"+k).value = e[k]||"";
+    $("#e-pkce").checked = !!e.pkce;
+  }catch(err){ $("#kopfstatus").textContent = "Server nicht erreichbar"; }
+}
+
+// ---------- Einstellungen ----------
+async function einstSpeichern(){
+  const d={host:$("#e-host").value, client_id:$("#e-client_id").value.trim(), redirect:$("#e-redirect").value.trim(),
+           scopes:$("#e-scopes").value.trim(), pkce:$("#e-pkce").checked};
+  if($("#e-client_secret").value) d.client_secret=$("#e-client_secret").value;
+  try{ await api("/api/einstellungen", d); $("#e-client_secret").value=""; $("#einstinfo").textContent="Gespeichert."; status(); }
+  catch(err){ $("#einstinfo").textContent="Fehler: "+err.message; }
+}
+async function pruefen(){
+  melde("#anmeldehinweis","Prüfe …","hint");
+  try{ const r=await api("/api/pruefen"); melde("#anmeldehinweis", esc(r.text), r.ok?"okb":"err"); }
+  catch(err){ melde("#anmeldehinweis", esc(err.message), "err"); }
+}
+async function anmelden(){
+  try{
+    const r = await api("/api/anmelden", {});
+    melde("#anmeldehinweis", `Es hat sich ein Browserfenster geöffnet. Dort anmelden und die Berechtigungen bestätigen.<br>
+      Beim Zurückleiten warnt der Browser vor dem Zertifikat von <code>localhost</code> – das ist normal: <b>Erweitert → Weiter zu localhost</b>.<br>
+      Falls sich nichts öffnet: <a href="${esc(r.url)}" target="_blank">diesen Link anklicken</a>.<br><br>
+      <span class="kl">Notausgang: Wenn der Browser hängt, aber in der Adresszeile <code>…/callback?code=…</code> steht, die komplette Adresse hier einfügen:</span>
+      <div class="zeile"><input id="notadresse" style="flex:1;font:inherit;padding:6px 10px;border:1px solid #c9d1da;border-radius:8px">
+      <button class="b sek" onclick="notausgang()">Einreichen</button></div>
+      <div id="anmeldewarte" class="kl">Warte auf die Rückleitung …</div>`, "hint");
+    const t = setInterval(async ()=>{
+      try{
+        const s = (await api("/api/anmelden/status")).status;
+        if(s==="wartet") return;
+        clearInterval(t);
+        if(s==="fertig"){ melde("#anmeldehinweis","Angemeldet.","okb"); status(); zielkurseLaden(); }
+        else melde("#anmeldehinweis", esc(s), "err");
+      }catch(err){ clearInterval(t); melde("#anmeldehinweis", esc(err.message), "err"); }
+    }, 1500);
+  }catch(err){ melde("#anmeldehinweis", esc(err.message), "err"); }
+}
+async function notausgang(){
+  try{ const r=await api("/api/anmelden/code",{adresse:$("#notadresse").value}); if(r.status!=="fertig") throw new Error(r.status);
+       melde("#anmeldehinweis","Angemeldet.","okb"); status(); }
+  catch(err){ melde("#anmeldehinweis", esc(err.message), "err"); }
+}
+async function abmelden(){ await api("/api/abmelden",{}); status(); }
+
+// ---------- Kursdateien ----------
+async function kursdateienLaden(){
+  const r = await api("/api/kursdateien");
+  const s = $("#kursdatei"); const alt = s.value; s.innerHTML="";
+  if(!r.kurse.length){ s.innerHTML='<option value="">– keine kurs.md im Ordner kurse/ gefunden –</option>'; $("#kursinfo").innerHTML=""; return; }
+  for(const k of r.kurse) s.innerHTML += `<option value="${esc(k.pfad)}">${esc(k.titel)}  (${esc(k.pfad)})</option>`;
+  if([...s.options].some(o=>o.value===alt)) s.value=alt;
+  uebersicht();
+}
+async function uebersicht(){
+  const pfad=$("#kursdatei").value; if(!pfad) return;
+  try{
+    const u = await api("/api/kurs/uebersicht?pfad="+encodeURIComponent(pfad));
+    let h = `<div class="box"><b>${esc(u.titel||"(ohne Titel)")}</b> <span class="kl">· Design ${esc(u.design)} · kurs: ${u.kurs_id??"–"}</span>`;
+    for(const m of u.module){
+      h += `<h3>${esc(m.titel)} <span class="kl">${esc(m.beschreibung||"")}</span></h3><ul class="ue">`;
+      for(const it of m.items){
+        let z = `<span class="tag ${it.art}">${it.art}</span>${esc(it.titel)}`;
+        if(it.props.punkte) z += ` <span class="kl">· ${esc(it.props.punkte)} P</span>`;
+        if(it.props.faellig) z += ` <span class="kl">· fällig ${esc(it.props.faellig)}</span>`;
+        if(it.quizze) for(const q of it.quizze) z += ` <span class="kl">· Selbstcheck „${esc(q.titel)}“ (${q.fragen} Fragen)</span>`;
+        if(it.quiz) z += ` <span class="kl">· ${it.quiz.fragen} Fragen, ${it.quiz.punkte} P${it.quiz.benotet?", benotet":""}</span>`;
+        h += `<li>${z}</li>`;
+      }
+      h += "</ul>";
+    }
+    h += "</div>";
+    for(const [st,tx] of u.meldungen) h += `<div class="${st==='fehler'?'err':'hint'}"><b>${st}:</b> ${esc(tx)}</div>`;
+    $("#kursinfo").innerHTML = h;
+    if(u.kurs_id && $("#zielkurs").querySelector(`option[value="${u.kurs_id}"]`)) $("#zielkurs").value=u.kurs_id;
+  }catch(err){ $("#kursinfo").innerHTML = `<div class="err">${esc(err.message)}</div>`; }
+}
+$("#kursdatei").onchange = uebersicht;
+async function vorschau(){
+  try{ const r = await api("/api/kurs/vorschau",{pfad:$("#kursdatei").value, design:$("#design").value});
+       window.open(r.url,"_blank");
+       if(r.meldungen.length) melde("#kursinfo", r.meldungen.map(m=>esc(m[1])).join("<br>"), "hint"); }
+  catch(err){ melde("#laufergebnis", esc(err.message), "err"); }
+}
+async function exportieren(){
+  try{ const r = await api("/api/kurs/export",{pfad:$("#kursdatei").value, design:$("#design").value});
+       $("#laufbox").style.display="block"; $("#lauftitel").textContent="Export";
+       $("#lauflog").textContent="";
+       melde("#laufergebnis", `Paket mit ${r.anzahl} Ressourcen: <code>${esc(r.datei)}</code> – <a href="${esc(r.url)}">herunterladen</a>.<br>
+         In Brightspace: Kursverwaltung → Import/Export/Kopieren → Komponenten importieren.` +
+         (r.csv.length?`<br>Fragen-CSV für die Fragensammlung: ${r.csv.map(c=>"<code>"+esc(c)+"</code>").join(", ")}`:""), "okb"); }
+  catch(err){ melde("#laufergebnis", esc(err.message), "err"); }
+}
+
+// ---------- Ziel-Kurse ----------
+async function zielkurseLaden(){
+  try{
+    const r = await api("/api/kurse");
+    for(const id of ["#zielkurs","#aufkurs"]){
+      const s=$(id); const alt=s.value; s.innerHTML='<option value="">– Kurs wählen –</option>';
+      for(const k of r.kurse) s.innerHTML += `<option value="${k.id}">${esc(k.name)}  (${k.id}${k.rolle?", "+esc(k.rolle):""})</option>`;
+      if(alt) s.value=alt;
+    }
+    uebersicht();
+  }catch(err){ melde("#laufergebnis", "Kurse laden: "+esc(err.message), "err"); $("#laufbox").style.display="block"; }
+}
+
+// ---------- Einspielen / Lauf ----------
+let laufTimer=null;
+function laufAnzeigen(titel, danach){
+  $("#laufbox").style.display="block"; $("#lauftitel").textContent=titel; $("#lauflog").innerHTML=""; $("#laufergebnis").innerHTML="";
+  clearInterval(laufTimer);
+  laufTimer = setInterval(async ()=>{
+    const s = await api("/api/status");
+    $("#lauflog").innerHTML = s.zeilen.map(z=>{const m=z.match(/^\[(\w+)\]/); return `<span class="${m?m[1]:''}">${esc(z)}</span>`;}).join("\n");
+    $("#lauflog").scrollTop = 1e9;
+    if(s.lauf.fertig){ clearInterval(laufTimer); danach && danach(s.lauf); }
+  }, 800);
+}
+async function einspielen(trocken){
+  const pfad=$("#kursdatei").value, kurs_id=$("#zielkurs").value;
+  if(!pfad) return melde("#laufergebnis","Keine Kursdatei gewählt.","err");
+  if(!kurs_id) { $("#laufbox").style.display="block"; return melde("#laufergebnis","Bitte oben den Ziel-Kurs wählen (erst „Kurse laden“).","err"); }
+  const kname = $("#zielkurs").selectedOptions[0].textContent;
+  if(!trocken){
+    const ok = await frage("Wirklich einspielen?", `Der Kurs aus <code>${esc(pfad)}</code> wird in<br><b>${esc(kname)}</b><br>angelegt (verborgen). Vorhandene Inhalte bleiben unberührt – bei doppeltem Einspielen gibt es alles doppelt.`);
+    if(!ok) return;
+  }
+  try{
+    await api("/api/kurs/einspielen",{pfad, kurs_id, trocken, design:$("#design").value});
+    laufAnzeigen(trocken?"Trockenlauf":"Einspielen", l=>{
+      if(l.fehler) melde("#laufergebnis", esc(l.fehler), "err");
+      else if(trocken) melde("#laufergebnis","Trockenlauf beendet – nichts wurde geändert.","okb");
+      else melde("#laufergebnis", `${l.ergebnis.angelegt} Objekte angelegt, ${l.ergebnis.fehler} Fehler.
+        <a href="${esc(l.ergebnis.todo)}" target="_blank">Was noch von Hand zu tun ist</a>.`, l.ergebnis.fehler?"hint":"okb");
+    });
+  }catch(err){ $("#laufbox").style.display="block"; melde("#laufergebnis", esc(err.message), "err"); }
+}
+async function rueckgaengigZeigen(){
+  const pfad=$("#kursdatei").value;
+  try{
+    const r = await api("/api/kurs/rueckgaengig",{pfad, nur_zeigen:true});
+    if(!r.liste.length) return melde("#laufergebnis","Nichts rückgängig zu machen (Protokoll leer).","hint");
+    const li = r.liste.map(x=>`<li>${esc(x[0])} ${x[1]} – ${esc(x[2])}</li>`).join("");
+    const t = await frage("Letztes Einspielen rückgängig machen?", `<p>Folgende ${r.liste.length} Objekte werden in Brightspace <b>gelöscht</b>:</p><ul style="max-height:220px;overflow:auto">${li}</ul>`, true);
+    if(t!=="LOESCHEN") return;
+    await api("/api/kurs/rueckgaengig",{pfad, bestaetigung:"LOESCHEN"});
+    laufAnzeigen("Rückgängig", l=>melde("#laufergebnis", l.fehler?esc(l.fehler):"Fertig.", l.fehler?"err":"okb"));
+  }catch(err){ $("#laufbox").style.display="block"; melde("#laufergebnis", esc(err.message), "err"); }
+}
+
+// ---------- Aufräumen ----------
+let INHALT=null;
+async function inhaltLaden(){
+  const ou=$("#aufkurs").value; if(!ou) return melde("#inhalt","Bitte Kurs wählen.","err");
+  $("#inhalt").innerHTML="Lade …";
+  try{
+    INHALT = await api("/api/inhalt?kurs_id="+ou);
+    let h="";
+    const zeile=(art,o,extra,tiefe)=>`<tr class="tiefe${tiefe||0}"><td><input type="checkbox" data-art="${art}" data-id="${o.id}" data-titel="${esc(o.titel)}" onchange="zaehlen()"></td>
+      <td><span class="tag ${art}">${art}</span></td><td>${esc(o.titel)}${o.hidden?' <span class="kl">(verborgen)</span>':''}</td><td class="kl">${extra||""}</td><td class="kl">${o.id}</td></tr>`;
+    h += `<h3>Inhalt (Module und Themen) <span class="kl">· <a href="#" onclick="alleWaehlen('modul');return false">alle Module</a></span></h3><table><tr><th></th><th>Art</th><th>Titel</th><th></th><th>Id</th></tr>`;
+    for(const z of INHALT.toc) h += zeile(z.art, z, z.typ||"", z.tiefe);
+    h += "</table>";
+    h += `<h3>Abgabeordner</h3><table>`; for(const a of INHALT.abgaben) h += zeile("abgabe", a, a.note_id?"mit Notenelement "+a.note_id:"", 0); h += "</table>";
+    h += `<h3>Notenelemente</h3><table>`; for(const n of INHALT.noten) h += zeile("note", n, (n.punkte??"")+" P · "+esc(n.typ||""), 0); h += "</table>";
+    h += `<h3>Quizze</h3><table>`; for(const q of INHALT.quizze) h += zeile("quiz", q, q.aktiv?"aktiv":"inaktiv", 0); h += "</table>";
+    for(const f of INHALT.probleme) h += `<div class="hint">${esc(f)}</div>`;
+    $("#inhalt").innerHTML=h; $("#loeschzeile").style.display="flex"; zaehlen();
+  }catch(err){ melde("#inhalt", esc(err.message), "err"); }
+}
+function alleWaehlen(art){ document.querySelectorAll(`#inhalt input[data-art="${art}"]`).forEach(c=>c.checked=true); zaehlen(); }
+function auswahl(){ return [...document.querySelectorAll("#inhalt input:checked")].map(c=>({art:c.dataset.art,id:+c.dataset.id,titel:c.dataset.titel})); }
+function zaehlen(){ $("#auswahlzahl").textContent = auswahl().length+" ausgewählt"; }
+async function loeschenFragen(){
+  const a = auswahl(); if(!a.length) return;
+  const li = a.map(x=>`<li>${esc(x.art)} – ${esc(x.titel)} (${x.id})</li>`).join("");
+  const t = await frage("Wirklich löschen?", `<p>${a.length} Objekte werden in Brightspace gelöscht. Inhaltsmodule/-themen lassen sich <b>nicht</b> wiederherstellen.</p><ul style="max-height:220px;overflow:auto">${li}</ul>`, true);
+  if(t!=="LOESCHEN") return;
+  await api("/api/loeschen",{kurs_id:+$("#aufkurs").value, objekte:a, bestaetigung:"LOESCHEN"});
+  $("#loeschlog").innerHTML='<pre class="log" id="loeschpre"></pre>';
+  const tm=setInterval(async ()=>{
+    const s=await api("/api/status"); $("#loeschpre").textContent=s.zeilen.join("\n");
+    if(s.lauf.fertig){ clearInterval(tm); inhaltLaden(); }
+  },800);
+}
+
+// ---------- Start ----------
+status(); kursdateienLaden();
+setInterval(status, 15000);
+</script>
+</body>
+</html>
